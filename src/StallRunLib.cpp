@@ -37,18 +37,34 @@ void StallPosArr::push(const StallPosID& pos)
 	m_count++;
 }
 
-const StallPosID& StallPosArr::pop()
+StallPosID StallPosArr::pop()
 {
-	const StallPosID& pos = m_tail->Pos;
+	if (!m_head)
+	{
+		if (StallInfo.IsInitialized())
+		{
+			Serial.println("Popped an empty array!");
+			return 0;
+		}
+	}
+	StallPosID pos = m_tail->Pos;
+	if (m_count == 1)
+	{
+		delete m_head;
+		m_head = m_tail = nullptr;
+		m_count--;
+		return pos;
+	}
 	StallPosArrNode* node = m_head;
-	while (node->Next != m_tail)
+	while (node->Next->Next != nullptr)
 	{
 		node = node->Next;
 	}
-	delete m_tail;
-	m_tail = node;
+	delete node->Next;
 	node->Next = nullptr;
+	m_tail = node;
 	m_count--;
+	return pos;
 }
 
 StallPosID StallInfoClass::GetNextStallPosID()
@@ -70,7 +86,12 @@ void StallInfoClass::Run(const StallPosID& id)
 {
 	for (const auto& item : m_arr)
 	{
-		if (item.Pos == id) return;
+		if (item.Pos == id)
+		{
+			Serial.print("Already stalling: ");
+			Serial.println(id);
+			return;
+		}
 	}
 	m_arr.push(id);
 	InStall();
@@ -82,4 +103,14 @@ StallInfoClass StallInfo{};
 StallPosArrNode::StallPosArrNode(StallPosID pos)
 {
 	Pos = pos;
+}
+
+void _stallDelay(uint32_t ms, const StallPosID& id)
+{
+	uint32_t end = millis() + ms;
+	while (millis() < end)
+	{
+		StallInfo.Run(id);
+		delay(1);
+	}
 }

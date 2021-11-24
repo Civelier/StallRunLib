@@ -40,7 +40,7 @@ public:
 	StallPosArrNode* begin();
 	StallPosArrNode* end();
 	void push(const StallPosID& pos);
-	const StallPosID& pop();
+	StallPosID pop();
 };
 
 void InStall();
@@ -60,7 +60,9 @@ public:
 
 extern StallInfoClass StallInfo;
 
+void _stallDelay(uint32_t ms, const StallPosID& id);
 
+#define stallDelay(ms) {static StallPosID _stallpos = StallInfo.GetNextStallPosID(); _stallDelay(ms, _stallpos);}
 
 #endif
 
