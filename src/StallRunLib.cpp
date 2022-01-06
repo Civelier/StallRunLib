@@ -6,9 +6,9 @@
 */
 
 #include "StallRunLib.h"
-#include <algorithm>
+#include "c:/Users/civel/AppData/Local/arduino15/packages/arduino/hardware/samd/1.8.11/cores/arduino/api/Common.h"
 
-size_t StallPosArr::size()
+uint32_t StallPosArr::size()
 {
 	return m_count;
 }
@@ -43,7 +43,7 @@ StallPosID StallPosArr::pop()
 	{
 		if (StallInfo.IsInitialized())
 		{
-			Serial.println("Popped an empty array!");
+			//Serial.println("Popped an empty array!");
 			return 0;
 		}
 	}
@@ -82,20 +82,34 @@ void StallInfoClass::InitDone()
 	m_isInitialized = true;
 }
 
+bool StallInfoClass::IsLowPriority()
+{
+	return m_lowPriority;
+}
+
 void StallInfoClass::Run(const StallPosID& id)
 {
+	m_lastRun = millis();
+	ForcedRunStall();
 	for (const auto& item : m_arr)
 	{
 		if (item.Pos == id)
 		{
-			Serial.print("Already stalling: ");
-			Serial.println(id);
+			//Serial.print("Already stalling: ");
+			//Serial.println(id);
 			return;
 		}
 	}
 	m_arr.push(id);
 	InStall();
 	m_arr.pop();
+}
+
+void StallInfoClass::LowPriorityRun(const StallPosID& id, uint32_t refreshMS)
+{
+	m_lowPriority = true;
+	if (millis() - m_lastRun > refreshMS) Run(id);
+	m_lowPriority = false;
 }
 
 StallInfoClass StallInfo{};
